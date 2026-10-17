@@ -103,6 +103,15 @@ class TimestampFileHandler(logging.StreamHandler):
     Since this was developed, a TimedRotatingFileHandler was added to
     the Python stdlib. This class is still useful because it allows the period
     to be specified using simple english words.
+
+    >>> tmp_path = getfixture('tmp_path')
+    >>> handler = TimestampFileHandler(str(tmp_path / 'test.log'))
+    >>> handler.emit(logging.makeLogRecord(dict(msg='first')))
+    >>> handler.emit(logging.makeLogRecord(dict(msg='second')))
+    >>> handler.close()
+    >>> [log] = tmp_path.iterdir()
+    >>> log.read_text(encoding='utf-8')
+    'first\\nsecond\\n'
     """
 
     def __init__(self, base_filename, mode='a', period='day'):
