@@ -45,7 +45,7 @@ def add_arguments(parser, default_level=logging.INFO):
     >>> import argparse
     >>> add_arguments(argparse.ArgumentParser())
     """
-    adder = getattr(parser, 'add_argument', None) or getattr(parser, 'add_option')
+    adder = getattr(parser, 'add_argument', None) or parser.add_option
     adder(
         '-l',
         '--log-level',
@@ -140,7 +140,7 @@ class TimestampFileHandler(logging.StreamHandler):
 
     def _use_file(self, filename):
         self._ensure_directory_exists(filename)
-        self.stream = open(filename, self.mode)
+        self.stream = open(filename, self.mode)  # noqa: SIM115 # stream outlives this method
 
     def _ensure_directory_exists(self, filename):
         dirname = os.path.dirname(filename)
@@ -181,7 +181,7 @@ class TimestampFileHandler(logging.StreamHandler):
         now = time.time()
         current_name = self.get_filename(now)
         try:
-            if not self.stream.name == current_name:
+            if self.stream.name != current_name:
                 self._use_file(current_name)
         except AttributeError:
             # a stream has not been created, so create one.
