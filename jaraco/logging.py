@@ -8,6 +8,7 @@ import string
 import time
 
 import tempora
+import tempora.utc
 
 
 @functools.singledispatch
@@ -44,7 +45,7 @@ def add_arguments(parser, default_level=logging.INFO):
     >>> import argparse
     >>> add_arguments(argparse.ArgumentParser())
     """
-    adder = getattr(parser, 'add_argument', None) or getattr(parser, 'add_option')
+    adder = getattr(parser, 'add_argument', None) or parser.add_option
     adder(
         '-l',
         '--log-level',
@@ -102,6 +103,15 @@ class TimestampFileHandler(logging.StreamHandler):
     Since this was developed, a TimedRotatingFileHandler was added to
     the Python stdlib. This class is still useful because it allows the period
     to be specified using simple english words.
+
+    >>> tmp_path = getfixture('tmp_path')
+    >>> handler = TimestampFileHandler(str(tmp_path / 'test.log'))
+    >>> handler.emit(logging.makeLogRecord(dict(msg='first')))
+    >>> handler.emit(logging.makeLogRecord(dict(msg='second')))
+    >>> handler.close()
+    >>> [log] = tmp_path.iterdir()
+    >>> log.read_text(encoding='utf-8')
+    'first\\nsecond\\n'
     """
 
     def __init__(self, base_filename, mode='a', period='day'):
@@ -131,7 +141,7 @@ class TimestampFileHandler(logging.StreamHandler):
 
     def _use_file(self, filename):
         self._ensure_directory_exists(filename)
-        previous, self.stream = self.stream, open(filename, self.mode)
+        previous, self.stream = self.stream, open(filename, self.mode)  # noqa: SIM115 # stream outlives this method
         if previous is not None:
             previous.close()
 
@@ -174,7 +184,7 @@ class TimestampFileHandler(logging.StreamHandler):
         now = time.time()
         current_name = self.get_filename(now)
         try:
-            if not self.stream.name == current_name:
+            if self.stream.name != current_name:
                 self._use_file(current_name)
         except AttributeError:
             # a stream has not been created, so create one.
